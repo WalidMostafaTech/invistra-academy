@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import ProfileTitle from "@/components/common/ProfileTitle";
 import MyExamsSkeleton from "@/components/Loading/SkeletonLoading/MyExamsSkeleton";
 import { useQuery } from "@tanstack/react-query";
-import { getExamsStudent } from "@/api/ExamServices";
+import { getExamsCourses, getExamsStudent } from "@/api/ExamServices";
 import EmptyDataSection from "@/components/sections/EmptyDataSection";
 import MainPagination from "@/components/common/MainPagination";
 import ExamCard from "@/components/cards/ExamCard";
@@ -35,11 +35,18 @@ const StudentExams = () => {
   // قراءة القيم الحالية من الـ URL للحفاظ عليها عند تحديث الصفحة
   const currentSearch = searchParams.get("search") || "";
   const currentStatus = searchParams.get("status") || "all";
+  const currentCourse = searchParams.get("course_id") || "all"; // قراءة فلتر الكورس
   const currentPage = Number(searchParams.get("page")) || 1;
 
   // إدارة حالة حقل البحث محلياً
   const [searchInput, setSearchInput] = useState(currentSearch);
   const debouncedSearch = useDebounce(searchInput, 500);
+
+  // جلب قائمة الكورسات
+  const { data: examsCourses, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["examsCourses"],
+    queryFn: getExamsCourses,
+  });
 
   // دالة تحديث الفلاتر الشاملة في الـ URL
   const updateFilters = (key, value) => {
@@ -69,13 +76,20 @@ const StudentExams = () => {
     setSearchInput(currentSearch);
   }, [currentSearch]);
 
-  // جلب البيانات بناءً على الفلاتر من الـ URL
+  // جلب البيانات بناءً على الفلاتر من الـ URL (إضافة currentCourse)
   const { data: exams, isLoading } = useQuery({
-    queryKey: ["examsStudent", currentSearch, currentStatus, currentPage],
+    queryKey: [
+      "examsStudent",
+      currentSearch,
+      currentStatus,
+      currentCourse,
+      currentPage,
+    ],
     queryFn: () =>
       getExamsStudent({
         search: currentSearch || undefined,
         status: currentStatus !== "all" ? currentStatus : undefined,
+        course_id: currentCourse !== "all" ? currentCourse : undefined, // إرسال course_id للباك إند
         page: currentPage,
       }),
   });
@@ -83,12 +97,31 @@ const StudentExams = () => {
   const isEmpty = !isLoading && (!exams?.items || exams?.items?.length === 0);
   const totalPages = exams?.meta?.last_page || 1;
 
+  const examStatus = [
+    {
+      value: "all",
+      label: t("myExams.all"),
+    },
+    {
+      value: "coming",
+      label: t("myExams.status.coming"),
+    },
+    {
+      value: "ended",
+      label: t("myExams.status.ended"),
+    },
+    {
+      value: "retry_available",
+      label: t("myExams.status.retry_available"),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <ProfileTitle title={t("myExams.title")} />
 
-      {/* قسم الفلاتر والبحث متناسق مع باقي الصفحات */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-card rounded-lg border">
+      {/* قسم الفلاتر والبحث (تعديل الشبكة لتصبح 3 أعمدة بدلاً من 2) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-card rounded-lg border">
         {/* حقل البحث باسم الاختبار */}
         <div>
           <label className="text-sm font-medium inline-block mb-2">
@@ -100,6 +133,32 @@ const StudentExams = () => {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
+        </div>
+
+        {/* فلتر الكورس (الجديد) */}
+        <div>
+          <label className="text-sm font-medium inline-block mb-2">
+            {t("myExams.courseLabel")}
+          </label>
+          <Select
+            value={currentCourse}
+            onValueChange={(val) => updateFilters("course_id", val)}
+            disabled={isLoadingCourses}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={t("myExams.coursePlaceholder")} />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectGroup>
+                <SelectItem value="all">{t("myExams.allCourses")}</SelectItem>
+                {examsCourses?.map((course) => (
+                  <SelectItem key={course.id} value={String(course.id)}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* فلتر حالة الاختبار */}
@@ -116,16 +175,11 @@ const StudentExams = () => {
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectGroup>
-                <SelectItem value="all">{t("myExams.all")}</SelectItem>
-                <SelectItem value="coming">
-                  {t("myExams.status.coming")}
-                </SelectItem>
-                <SelectItem value="ended">
-                  {t("myExams.status.ended")}
-                </SelectItem>
-                <SelectItem value="retry_available">
-                  {t("myExams.status.retry_available")}
-                </SelectItem>
+                {examStatus.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>

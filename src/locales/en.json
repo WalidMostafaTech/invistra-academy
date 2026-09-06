@@ -1030,6 +1030,9 @@
     "searchPlaceholder": "Enter exam name...",
     "statusLabel": "Exam Status",
     "statusPlaceholder": "Select exam status",
+    "courseLabel": "Course",
+    "coursePlaceholder": "Select course",
+    "allCourses": "All Courses",
     "all": "All",
     "status": {
       "coming": "Upcoming",

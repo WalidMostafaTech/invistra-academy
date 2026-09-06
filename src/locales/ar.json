@@ -1029,6 +1029,9 @@
     "searchPlaceholder": "أدخل اسم الاختبار للبحث...",
     "statusLabel": "حالة الاختبار",
     "statusPlaceholder": "اختر حالة الاختبار",
+    "courseLabel": "الكورس",
+    "coursePlaceholder": "اختر الكورس",
+    "allCourses": "جميع الكورسات",
     "all": "الكل",
     "status": {
       "coming": "قادم",

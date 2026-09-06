@@ -86,3 +86,8 @@ export const uploadExamFile = async ({ formData, courseId }) => {
   );
   return data;
 };
+
+export const getExamsCourses = async () => {
+  const { data } = await api.get("/student-profile/exams/courses");
+  return data?.data || [];
+};
